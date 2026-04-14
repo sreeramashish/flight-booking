@@ -34,7 +34,7 @@ const Admin = () => {
 
     const fetchBookings = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/bookings', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/bookings`, {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setBookings(res.data);
@@ -46,7 +46,7 @@ const Admin = () => {
     const handleAddFlight = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/flights', {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/flights`, {
                 airlineName, source, destination, departureTime, arrivalTime, price
             }, {
                 headers: { Authorization: `Bearer ${user.token}` }

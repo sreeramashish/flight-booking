@@ -19,7 +19,7 @@ const Register = () => {
         e.preventDefault();
         setError('');
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/send-otp', { email });
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/send-otp`, { email });
             setMessage(res.data.message);
             setStep(2);
         } catch (err) {

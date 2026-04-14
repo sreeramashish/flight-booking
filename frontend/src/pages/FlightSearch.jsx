@@ -26,7 +26,7 @@ const FlightSearch = () => {
     const handleSearch = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.get('http://localhost:5000/api/flights', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/flights`, {
                 params: { source, destination, date }
             });
             setFlights(res.data);
@@ -53,7 +53,7 @@ const FlightSearch = () => {
         
         setTimeout(async () => {
             try {
-                await axios.post('http://localhost:5000/api/bookings', {
+                await axios.post(`${import.meta.env.VITE_API_URL}/api/bookings`, {
                     flightId: selectedFlightId,
                     seatNumber: selectedSeat || '12A', 
                     travelDate: date || new Date().toISOString()
