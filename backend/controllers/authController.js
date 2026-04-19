@@ -19,30 +19,35 @@ const sendOTP = async (req, res) => {
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit OTP
         await OTP.create({ email, otp: otpCode });
         
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'SkyBooker - Your Verification OTP',
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
-                    <h2 style="color: #0ea5e9;">Welcome to SkyBooker!</h2>
-                    <p>Use the following OTP to complete your registration. It is valid for 5 minutes.</p>
-                    <h1 style="font-size: 36px; letter-spacing: 5px; color: #333; background: #f3f4f6; padding: 10px; border-radius: 10px; display: inline-block;">${otpCode}</h1>
-                    <p>If you didn't request this, you can safely ignore this email.</p>
-                </div>
-            `
-        };
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'SkyBooker - Your Verification OTP',
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
+                        <h2 style="color: #0ea5e9;">Welcome to SkyBooker!</h2>
+                        <p>Use the following OTP to complete your registration. It is valid for 5 minutes.</p>
+                        <h1 style="font-size: 36px; letter-spacing: 5px; color: #333; background: #f3f4f6; padding: 10px; border-radius: 10px; display: inline-block;">${otpCode}</h1>
+                        <p>If you didn't request this, you can safely ignore this email.</p>
+                    </div>
+                `
+            };
 
-        await transporter.sendMail(mailOptions);
-        res.status(200).json({ message: 'OTP sent to your email successfully!' });
+            await transporter.sendMail(mailOptions);
+            res.status(200).json({ message: 'OTP sent to your email successfully!' });
+        } else {
+            console.log(`\n\n[DEV MODE] OTP for ${email} is: ${otpCode}\n\n`);
+            res.status(200).json({ message: 'Email config missing. Check server console for OTP (Dev Mode)!' });
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
