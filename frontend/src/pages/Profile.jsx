@@ -12,23 +12,23 @@ const Profile = () => {
     const [bookings, setBookings] = useState([]);
 
     useEffect(() => {
+        const fetchTravelHistory = async () => {
+            try {
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/bookings/my-bookings`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                setBookings(res.data);
+            } catch (_error) {
+                console.error('Failed to fetch travel history', _error);
+            }
+        };
+
         if (!user) {
             navigate('/login');
         } else {
             fetchTravelHistory();
         }
     }, [user, navigate]);
-
-    const fetchTravelHistory = async () => {
-        try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/bookings/my-bookings`, {
-                headers: { Authorization: `Bearer ${user.token}` }
-            });
-            setBookings(res.data);
-        } catch (error) {
-            console.error('Failed to fetch travel history', error);
-        }
-    };
 
     if (!user) return null;
 

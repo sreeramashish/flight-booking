@@ -25,23 +25,23 @@ const Admin = () => {
     const [filterDate, setFilterDate] = useState('');
 
     useEffect(() => {
+        const fetchBookings = async () => {
+            try {
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/bookings`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                setBookings(res.data);
+            } catch (_error) {
+                console.error('Failed to fetch bookings', _error);
+            }
+        };
+
         if (!user || user.role !== 'admin') {
             navigate('/');
         } else {
             fetchBookings();
         }
     }, [user, navigate]);
-
-    const fetchBookings = async () => {
-        try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/bookings`, {
-                headers: { Authorization: `Bearer ${user.token}` }
-            });
-            setBookings(res.data);
-        } catch (error) {
-            console.error('Failed to fetch bookings', error);
-        }
-    };
 
     const handleAddFlight = async (e) => {
         e.preventDefault();
@@ -54,7 +54,7 @@ const Admin = () => {
             setMessage('Flight added successfully!');
             setAirlineName(''); setSource(''); setDestination('');
             setDepartureTime(''); setArrivalTime(''); setPrice('');
-        } catch (error) {
+        } catch {
             setMessage('Failed to add flight.');
         }
     };

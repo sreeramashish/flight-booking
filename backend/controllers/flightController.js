@@ -7,9 +7,9 @@ const getFlights = async (req, res) => {
         if (source) filter.source = new RegExp(source, 'i');
         if (destination) filter.destination = new RegExp(destination, 'i');
         if (date) {
-            const startDate = new Date(date);
-            const endDate = new Date(date);
-            endDate.setDate(endDate.getDate() + 1);
+            const [year, month, day] = date.split('-').map(Number);
+            const startDate = new Date(year, month - 1, day);
+            const endDate = new Date(year, month - 1, day + 1);
             filter.departureTime = { $gte: startDate, $lt: endDate };
         }
         const flights = await Flight.find(filter);

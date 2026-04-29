@@ -22,11 +22,13 @@ const FlightSearch = () => {
 
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     const handleSearch = async (e) => {
         e.preventDefault();
+        if (!source || !destination || !date) return;
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/flights`, {
+            const res = await axios.get(`${apiBase}/api/flights`, {
                 params: { source, destination, date }
             });
             setFlights(res.data);
@@ -64,7 +66,7 @@ const FlightSearch = () => {
                 setModalOpen(false);
                 alert('Payment successful! Your flight is booked. Email Ticket Sent!');
                 navigate('/my-bookings');
-            } catch (error) {
+            } catch {
                 setIsProcessing(false);
                 alert('Booking failed after payment simulation.');
             }
@@ -193,6 +195,7 @@ const FlightSearch = () => {
                                     value={source}
                                     onChange={(e) => setSource(e.target.value)}
                                     placeholder="Source City"
+                                    required
                                 />
                             </div>
                         </div>
@@ -206,6 +209,7 @@ const FlightSearch = () => {
                                     value={destination}
                                     onChange={(e) => setDestination(e.target.value)}
                                     placeholder="Destination City"
+                                    required
                                 />
                             </div>
                         </div>
@@ -215,9 +219,11 @@ const FlightSearch = () => {
                                 <Calendar className="absolute left-3 top-3 text-gray-400" size={18} />
                                 <input 
                                     type="date" 
+                                    min={new Date().toISOString().split('T')[0]}
                                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition"
                                     value={date}
                                     onChange={(e) => setDate(e.target.value)}
+                                    required
                                 />
                             </div>
                         </div>

@@ -26,10 +26,10 @@ const Bookings = () => {
         fetchBookings();
     }, [user]);
 
-    if (!user) return <div className="pt-24 text-center">Please login to view your bookings.</div>;
+    if (!user) return <div className="pt-32 text-center">Please login to view your bookings.</div>;
 
     return (
-        <div className="pt-24 min-h-screen bg-gray-50 px-4 pb-12">
+        <div className="pt-32 min-h-screen bg-gray-50 px-4 pb-12">
             <div className="max-w-4xl mx-auto">
                 <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight flex items-center">
                     <Ticket className="mr-3 text-primary-600" size={32} />
@@ -47,7 +47,7 @@ const Bookings = () => {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {bookings.map(booking => (
+                        {bookings.filter(booking => booking.flightId).map(booking => (
                             <motion.div 
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -110,7 +110,7 @@ const Bookings = () => {
                                             <div className="relative w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-3">
                                                 <div 
                                                     className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-full" 
-                                                    style={{ width: `${Math.floor(Math.random() * 60) + 20}%` }} // Simulated random progress
+                                                    style={{ width: `${(booking._id.charCodeAt(0) % 60) + 20}%` }} // Deterministic simulated progress
                                                 ></div>
                                             </div>
                                             <div className="flex justify-between mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
