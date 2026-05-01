@@ -8,23 +8,44 @@ import { Link } from 'react-router-dom';
 
 const Bookings = () => {
     const [bookings, setBookings] = useState([]);
+    const [message, setMessage] = useState('');
     const { user } = useContext(AuthContext);
 
-    useEffect(() => {
-        const fetchBookings = async () => {
-            if (user) {
-                try {
-                    const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/bookings/mybookings`, {
-                        headers: { Authorization: `Bearer ${user.token}` }
-                    });
-                    setBookings(res.data);
-                } catch (error) {
-                    console.error('Error fetching bookings', error);
-                }
+    const fetchBookings = async () => {
+        if (user) {
+            try {
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/bookings/mybookings`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                setBookings(res.data);
+            } catch (error) {
+                console.error('Error fetching bookings', error);
             }
-        };
+        }
+    };
+
+    useEffect(() => {
         fetchBookings();
     }, [user]);
+
+    const cancelBooking = async (bookingId) => {
+        try {
+            const token = user?.token;
+            const url = `${import.meta.env.VITE_API_URL}/api/bookings/cancel/${bookingId}`;
+            console.log('DEBUG: Calling URL:', url);
+            const response = await axios.post(url, {}, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            console.log('Cancel response:', response.data);
+            setMessage('Booking cancelled successfully.');
+            await fetchBookings();
+        } catch (error) {
+            console.error('Cancel error:', error.response?.data || error.message);
+            setMessage('Failed to cancel booking: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
     if (!user) return <div className="pt-32 text-center">Please login to view your bookings.</div>;
 
@@ -35,6 +56,11 @@ const Bookings = () => {
                     <Ticket className="mr-3 text-primary-600" size={32} />
                     My Boarding Passes
                 </h2>
+                {message && (
+                    <div className="mb-6 p-4 rounded-2xl text-sm font-semibold text-white bg-primary-600">
+                        {message}
+                    </div>
+                )}
                 {bookings.length === 0 ? (
                     <div className="bg-white p-12 rounded-3xl text-center shadow-sm border border-gray-100">
                         <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -89,15 +115,30 @@ const Bookings = () => {
                                                 </div>
                                             </div>
                                             
-                                            <div className="bg-gray-50 p-8 w-full md:w-1/4 flex flex-col justify-center border-t md:border-t-0 md:border-l border-gray-100 relative z-10">
-                                                <div className="mb-6">
-                                                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1 flex items-center"><Navigation size={12} className="mr-1"/> Flight</p>
-                                                    <p className="text-lg font-bold text-gray-900 leading-none">{booking.flightId.airlineName}</p>
-                                                </div>
+                                            <div className="bg-gray-50 p-8 w-full md:w-1/4 flex flex-col justify-between border-t md:border-t-0 md:border-l border-gray-100 relative z-10">
                                                 <div>
-                                                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1 flex items-center"><Armchair size={12} className="mr-1"/> Seat</p>
-                                                    <p className="text-2xl font-black text-primary-600 leading-none">{booking.seatNumber}</p>
+                                                    <div className="mb-6">
+                                                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1 flex items-center"><Navigation size={12} className="mr-1"/> Flight</p>
+                                                        <p className="text-lg font-bold text-gray-900 leading-none">{booking.flightId.airlineName}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1 flex items-center"><Armchair size={12} className="mr-1"/> Seat</p>
+                                                        <p className="text-2xl font-black text-primary-600 leading-none">{booking.seatNumber}</p>
+                                                    </div>
                                                 </div>
+                                                {booking.status !== 'Cancelled' ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => cancelBooking(booking._id)}
+                                                        className="mt-6 w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition"
+                                                    >
+                                                        Cancel Booking
+                                                    </button>
+                                                ) : (
+                                                    <span className="inline-flex items-center justify-center mt-6 px-3 py-2 rounded-full bg-red-100 text-red-700 text-sm font-bold">
+                                                        Booking Cancelled
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
 

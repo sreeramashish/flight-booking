@@ -120,27 +120,26 @@ for (let day = 0; day < 7; day++) { // 7 days from today
 
 async function seedFlights() {
   try {
+    console.log("Connecting to MongoDB...");
     await mongoose.connect(process.env.MONGODB_URI);
-    await Flight.insertMany(flights);
-    console.log('Flights seeded successfully');
+    console.log("Connected to MongoDB");
+
+    const existingFlights = await Flight.countDocuments();
+    
+    if (existingFlights > 0) {
+      console.log(`[INFO] ${existingFlights} flights already exist. Skipping seeding to preserve booking integrity.`);
+    } else {
+      console.log("[INFO] No flights found. Seeding sample flights...");
+      await Flight.insertMany(flights);
+      console.log("[SUCCESS] Sample flights added successfully!");
+    }
   } catch (error) {
-    console.error('Error seeding flights:', error);
+    console.error('[ERROR] Error seeding flights:', error);
   } finally {
-    mongoose.connection.close();
+    await mongoose.connection.close();
+    console.log("MongoDB connection closed.");
+    process.exit();
   }
 }
 
 seedFlights();
-
-mongoose.connect(process.env.MONGODB_URI)
-  .then(async () => {
-    console.log("Connected to MongoDB");
-    await Flight.deleteMany(); // Clear existing flights (optional)
-    await Flight.insertMany(flights);
-    console.log("Sample flights added successfully!");
-    process.exit();
-  })
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });

@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { ShieldAlert, PlusCircle, LayoutDashboard, Users, Calendar as CalendarIcon, Ticket } from 'lucide-react';
+import { ShieldAlert, PlusCircle, LayoutDashboard, Users, Calendar as CalendarIcon, Ticket, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 
@@ -24,6 +24,10 @@ const Admin = () => {
     const [bookings, setBookings] = useState([]);
     const [filterDate, setFilterDate] = useState('');
 
+    // Manage Users States
+    const [users, setUsers] = useState([]);
+    const [userMessage, setUserMessage] = useState('');
+
     useEffect(() => {
         const fetchBookings = async () => {
             try {
@@ -43,6 +47,12 @@ const Admin = () => {
         }
     }, [user, navigate]);
 
+    useEffect(() => {
+        if (activeTab === 'manageUsers' && user) {
+            fetchUsers();
+        }
+    }, [activeTab, user]);
+
     const handleAddFlight = async (e) => {
         e.preventDefault();
         try {
@@ -56,6 +66,47 @@ const Admin = () => {
             setDepartureTime(''); setArrivalTime(''); setPrice('');
         } catch {
             setMessage('Failed to add flight.');
+        }
+    };
+
+    const cancelBooking = async (bookingId) => {
+        try {
+            const url = `${import.meta.env.VITE_API_URL}/api/bookings/cancel/${bookingId}`;
+            console.log('DEBUG: Admin calling URL:', url);
+            await axios.post(url, {}, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setBookings(prev => prev.map(b => b._id === bookingId ? { ...b, status: 'Cancelled' } : b));
+        } catch (error) {
+            console.error('Failed to cancel booking', error.response?.data || error.message);
+        }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setUsers(res.data);
+        } catch (error) {
+            console.error('Failed to fetch users', error);
+        }
+    };
+
+    const deleteUser = async (userId) => {
+        if (userId === user._id) {
+            setUserMessage('You cannot delete your own admin account.');
+            return;
+        }
+        try {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/users/${userId}`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setUsers(prev => prev.filter(u => u._id !== userId));
+            setUserMessage('User deleted and bookings removed successfully.');
+        } catch (error) {
+            console.error('Failed to delete user', error);
+            setUserMessage('Failed to delete user.');
         }
     };
 
@@ -87,6 +138,12 @@ const Admin = () => {
                         className={`px-6 py-3 rounded-full font-bold flex items-center transition ${activeTab === 'viewBookings' ? 'bg-primary-600 text-white shadow-lg shadow-primary-200' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
                     >
                         <Users size={18} className="mr-2" /> Customer Bookings
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('manageUsers')}
+                        className={`px-6 py-3 rounded-full font-bold flex items-center transition ${activeTab === 'manageUsers' ? 'bg-primary-600 text-white shadow-lg shadow-primary-200' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <Trash2 size={18} className="mr-2" /> Manage Users
                     </button>
                 </div>
 
@@ -176,7 +233,7 @@ const Admin = () => {
                                 <tbody>
                                     {filteredBookings.length === 0 ? (
                                         <tr>
-                                            <td colSpan="5" className="p-8 text-center text-gray-500">No bookings found for the selected criteria.</td>
+                                            <td colSpan="6" className="p-8 text-center text-gray-500">No bookings found for the selected criteria.</td>
                                         </tr>
                                     ) : (
                                         filteredBookings.map(booking => (
@@ -198,6 +255,68 @@ const Admin = () => {
                                                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${booking.status === 'Confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                                                         {booking.status}
                                                     </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <button
+                                                        onClick={() => cancelBooking(booking._id)}
+                                                        disabled={booking.status === 'Cancelled'}
+                                                        className={`px-4 py-2 rounded-full text-sm font-semibold transition ${booking.status === 'Cancelled' ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700'}`}
+                                                    >
+                                                        {booking.status === 'Cancelled' ? 'Cancelled' : 'Cancel'}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'manageUsers' && (
+                    <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 relative">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+                            <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                                <Users className="mr-3 text-primary-600" size={28} /> Manage Users
+                            </h3>
+                        </div>
+
+                        {userMessage && (
+                            <div className="p-4 rounded-xl mb-6 font-medium text-sm bg-red-50 text-red-600">
+                                {userMessage}
+                            </div>
+                        )}
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 text-sm tracking-wider uppercase">
+                                        <th className="p-4 font-bold rounded-tl-xl">Name</th>
+                                        <th className="p-4 font-bold">Email</th>
+                                        <th className="p-4 font-bold">Role</th>
+                                        <th className="p-4 font-bold rounded-tr-xl">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="4" className="p-8 text-center text-gray-500">No users found.</td>
+                                        </tr>
+                                    ) : (
+                                        users.map(u => (
+                                            <tr key={u._id} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                                                <td className="p-4 font-bold text-gray-900">{u.name}</td>
+                                                <td className="p-4 text-gray-600">{u.email}</td>
+                                                <td className="p-4 text-gray-700">{u.role}</td>
+                                                <td className="p-4">
+                                                    <button
+                                                        onClick={() => deleteUser(u._id)}
+                                                        disabled={u._id === user._id}
+                                                        className={`px-4 py-2 rounded-full text-sm font-semibold transition ${u._id === user._id ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700'}`}
+                                                    >
+                                                        Delete
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))
