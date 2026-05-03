@@ -24,15 +24,15 @@ const sendOTP = async (req, res) => {
             // Using explicit host and port for better reliability on cloud platforms
             const transporter = nodemailer.createTransport({
                 host: 'smtp.gmail.com',
-                port: 465,
-                secure: true,
+                port: 587,
+                secure: false, // Use false for STARTTLS (Port 587)
                 auth: {
                     user: process.env.EMAIL_USER,
                     pass: process.env.EMAIL_PASS
                 },
                 debug: true,
                 logger: true,
-                connectionTimeout: 15000 // 15 seconds
+                connectionTimeout: 15000
             });
 
             const mailOptions = {
