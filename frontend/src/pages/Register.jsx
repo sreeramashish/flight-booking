@@ -12,18 +12,22 @@ const Register = () => {
     const [step, setStep] = useState(1);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
     const { register } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleSendOTP = async (e) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/send-otp`, { email });
             setMessage(res.data.message);
             setStep(2);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to send OTP.');
+            setError(err.response?.data?.message || 'Failed to send OTP. Please check your connection.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -84,8 +88,12 @@ const Register = () => {
                                 placeholder="••••••••"
                             />
                         </div>
-                        <button type="submit" className="w-full bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 transition shadow-lg shadow-primary-200">
-                            Verify Email
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className={`w-full bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 transition shadow-lg shadow-primary-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            {loading ? 'Sending OTP...' : 'Verify Email'}
                         </button>
                     </form>
                 ) : (

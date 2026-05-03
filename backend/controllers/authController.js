@@ -20,16 +20,23 @@ const sendOTP = async (req, res) => {
         await OTP.create({ email, otp: otpCode });
         
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            console.log(`[DEBUG] Attempting to send OTP email to: ${email}`);
+            // Using explicit host and port for better reliability on cloud platforms
             const transporter = nodemailer.createTransport({
-                service: 'gmail',
+                host: 'smtp.gmail.com',
+                port: 465,
+                secure: true,
                 auth: {
                     user: process.env.EMAIL_USER,
                     pass: process.env.EMAIL_PASS
-                }
+                },
+                debug: true,
+                logger: true,
+                connectionTimeout: 15000 // 15 seconds
             });
 
             const mailOptions = {
-                from: process.env.EMAIL_USER,
+                from: `"SkyBooker" <${process.env.EMAIL_USER}>`,
                 to: email,
                 subject: 'SkyBooker - Your Verification OTP',
                 html: `
@@ -43,10 +50,12 @@ const sendOTP = async (req, res) => {
             };
 
             await transporter.sendMail(mailOptions);
+            console.log(`[SUCCESS] OTP email sent successfully to: ${email}`);
             res.status(200).json({ message: 'OTP sent to your email successfully!' });
         } else {
-            console.log(`\n\n[DEV MODE] OTP for ${email} is: ${otpCode}\n\n`);
-            res.status(200).json({ message: 'Email config missing. Check server console for OTP (Dev Mode)!' });
+            console.log(`\n\n[DEV MODE] !! EMAIL CONFIG MISSING !!`);
+            console.log(`[DEV MODE] OTP for ${email} is: ${otpCode}\n\n`);
+            res.status(200).json({ message: 'Email config missing on server. Check server logs for OTP!' });
         }
     } catch (error) {
         res.status(500).json({ message: error.message });
