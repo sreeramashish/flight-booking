@@ -21,18 +21,16 @@ const sendOTP = async (req, res) => {
         
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
             console.log(`[DEBUG] Attempting to send OTP email to: ${email}`);
-            // Using explicit host and port for better reliability on cloud platforms
+            
             const transporter = nodemailer.createTransport({
-                host: 'smtp.gmail.com',
-                port: 587,
-                secure: false, // Use false for STARTTLS (Port 587)
+                service: 'gmail',
                 auth: {
                     user: process.env.EMAIL_USER,
                     pass: process.env.EMAIL_PASS
                 },
-                debug: true,
-                logger: true,
-                connectionTimeout: 15000
+                tls: {
+                    rejectUnauthorized: false
+                }
             });
 
             const mailOptions = {
@@ -49,9 +47,18 @@ const sendOTP = async (req, res) => {
                 `
             };
 
-            await transporter.sendMail(mailOptions);
-            console.log(`[SUCCESS] OTP email sent successfully to: ${email}`);
-            res.status(200).json({ message: 'OTP sent to your email successfully!' });
+            try {
+                await transporter.sendMail(mailOptions);
+                console.log(`[SUCCESS] OTP email sent successfully to: ${email}`);
+                res.status(200).json({ message: 'OTP sent to your email successfully!' });
+            } catch (mailError) {
+                console.error(`[ERROR] Email failed but OTP was generated.`);
+                console.log(`\n\n[FALLBACK] OTP for ${email} is: ${otpCode}\n\n`);
+                res.status(200).json({ 
+                    message: 'Email service blocked by host. Check server logs for the OTP!',
+                    devMode: true 
+                });
+            }
         } else {
             console.log(`\n\n[DEV MODE] !! EMAIL CONFIG MISSING !!`);
             console.log(`[DEV MODE] OTP for ${email} is: ${otpCode}\n\n`);
