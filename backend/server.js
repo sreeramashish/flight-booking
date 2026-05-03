@@ -143,6 +143,10 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('SkyBooker backend is running');
+});
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/flights', require('./routes/flights'));
 
