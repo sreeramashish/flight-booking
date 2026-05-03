@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -8,7 +8,6 @@ import FlightSearch from './pages/FlightSearch';
 import Bookings from './pages/Bookings';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
 function App() {
   return (
