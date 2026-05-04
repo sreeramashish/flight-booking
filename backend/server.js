@@ -150,7 +150,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/flights', require('./routes/flights'));
 
-const nodemailer = require('nodemailer');
+
 const { protect } = require('./middleware/auth');
 const Booking = require('./models/Booking');
 const Ticket = require('./models/Ticket');
@@ -181,50 +181,39 @@ app.post('/api/bookings/cancel/:id', protect, async (req, res) => {
     await Ticket.deleteOne({ bookingId: booking._id });
 
     // Attempt to send cancellation email if configured
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      try {
-        console.log(`[DEBUG] Attempting to send cancellation email to: ${booking.userId.email}`);
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-        });
-        
-        const flightDetails = booking.flightId;
-        const ticketNum = ticket ? ticket.ticketNumber : 'N/A';
+    // Attempt to send cancellation email if configured
+    const { sendEmail } = require('./utils/email');
+    const flightDetails = booking.flightId;
+    const ticketNum = ticket ? ticket.ticketNumber : 'N/A';
 
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: booking.userId.email,
-          subject: '❌ SkyBooker - Your Booking has been Cancelled',
-          html: `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333;">
-              <div style="max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                <div style="background-color: #ef4444; padding: 20px; text-align: center;">
-                  <h1 style="color: white; margin: 0; font-size: 24px;">Booking Cancelled</h1>
-                </div>
-                <div style="padding: 30px;">
-                  <p>Hi <strong>${booking.userId.name}</strong>,</p>
-                  <p>Your flight booking has been successfully cancelled as requested.</p>
-                  <div style="background: #f9fafb; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #f3f4f6;">
-                    <h3 style="margin-top: 0; color: #ef4444;">Cancellation Details:</h3>
-                    <p style="margin: 5px 0;"><strong>Ticket Number:</strong> <span style="font-family: monospace; font-size: 1.1em;">${ticketNum}</span></p>
-                    <p style="margin: 5px 0;"><strong>Route:</strong> ${flightDetails ? `${flightDetails.source} to ${flightDetails.destination}` : 'N/A'}</p>
-                    <p style="margin: 5px 0;"><strong>Airline:</strong> ${flightDetails ? flightDetails.airlineName : 'N/A'}</p>
-                    <p style="margin: 5px 0;"><strong>Seat Number:</strong> ${booking.seatNumber}</p>
-                  </div>
-                  <p style="font-size: 0.9em; color: #6b7280;">If you did not request this cancellation, please contact our support team immediately.</p>
-                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 25px 0;" />
-                  <p style="text-align: center; color: #9ca3af; font-size: 0.8em;">Thank you for using SkyBooker. We hope to see you again soon!</p>
-                </div>
-              </div>
+    await sendEmail({
+      to: booking.userId.email,
+      subject: '❌ SkyBooker - Your Booking has been Cancelled',
+      html: `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333;">
+          <div style="max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <div style="background-color: #ef4444; padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Booking Cancelled</h1>
             </div>
-          `
-        });
-        console.log('[DEBUG] Cancellation email sent to:', req.user.email);
-      } catch (mailError) {
-        console.error("[ERROR] Cancellation email failed to send:", mailError);
-      }
-    }
+            <div style="padding: 30px;">
+              <p>Hi <strong>${booking.userId.name}</strong>,</p>
+              <p>Your flight booking has been successfully cancelled as requested.</p>
+              <div style="background: #f9fafb; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #f3f4f6;">
+                <h3 style="margin-top: 0; color: #ef4444;">Cancellation Details:</h3>
+                <p style="margin: 5px 0;"><strong>Ticket Number:</strong> <span style="font-family: monospace; font-size: 1.1em;">${ticketNum}</span></p>
+                <p style="margin: 5px 0;"><strong>Route:</strong> ${flightDetails ? `${flightDetails.source} to ${flightDetails.destination}` : 'N/A'}</p>
+                <p style="margin: 5px 0;"><strong>Airline:</strong> ${flightDetails ? flightDetails.airlineName : 'N/A'}</p>
+                <p style="margin: 5px 0;"><strong>Seat Number:</strong> ${booking.seatNumber}</p>
+              </div>
+              <p style="font-size: 0.9em; color: #6b7280;">If you did not request this cancellation, please contact our support team immediately.</p>
+              <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 25px 0;" />
+              <p style="text-align: center; color: #9ca3af; font-size: 0.8em;">Thank you for using SkyBooker. We hope to see you again soon!</p>
+            </div>
+          </div>
+        </div>
+      `
+    });
+
 
     res.json({ message: 'Booking cancelled successfully and email sent.', booking });
   } catch (error) {

@@ -7,9 +7,10 @@ const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-const nodemailer = require('nodemailer');
+const { sendEmail } = require('../utils/email');
 
 const sendOTP = async (req, res) => {
+
     const { email } = req.body;
     try {
         const userExists = await User.findOne({ email });
@@ -19,51 +20,30 @@ const sendOTP = async (req, res) => {
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         await OTP.create({ email, otp: otpCode });
         
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            console.log(`[DEBUG] Attempting to send OTP email to: ${email}`);
-            
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                },
-                tls: {
-                    rejectUnauthorized: false
-                }
-            });
+        const result = await sendEmail({
+            to: email,
+            subject: 'SkyBooker - Your Verification OTP',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
+                    <h2 style="color: #0ea5e9;">Welcome to SkyBooker!</h2>
+                    <p>Use the following OTP to complete your registration. It is valid for 5 minutes.</p>
+                    <h1 style="font-size: 36px; letter-spacing: 5px; color: #333; background: #f3f4f6; padding: 10px; border-radius: 10px; display: inline-block;">${otpCode}</h1>
+                    <p>If you didn't request this, you can safely ignore this email.</p>
+                </div>
+            `
+        });
 
-            const mailOptions = {
-                from: `"SkyBooker" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject: 'SkyBooker - Your Verification OTP',
-                html: `
-                    <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
-                        <h2 style="color: #0ea5e9;">Welcome to SkyBooker!</h2>
-                        <p>Use the following OTP to complete your registration. It is valid for 5 minutes.</p>
-                        <h1 style="font-size: 36px; letter-spacing: 5px; color: #333; background: #f3f4f6; padding: 10px; border-radius: 10px; display: inline-block;">${otpCode}</h1>
-                        <p>If you didn't request this, you can safely ignore this email.</p>
-                    </div>
-                `
-            };
-
-            try {
-                await transporter.sendMail(mailOptions);
-                console.log(`[SUCCESS] OTP email sent successfully to: ${email}`);
-                res.status(200).json({ message: 'OTP sent to your email successfully!' });
-            } catch (mailError) {
-                console.error(`[ERROR] Email failed but OTP was generated.`);
-                console.log(`\n\n[FALLBACK] OTP for ${email} is: ${otpCode}\n\n`);
-                res.status(200).json({ 
-                    message: 'Email service blocked by host. Check server logs for the OTP!',
-                    devMode: true 
-                });
-            }
+        if (result.success) {
+            res.status(200).json({ message: 'OTP sent to your email successfully!' });
         } else {
-            console.log(`\n\n[DEV MODE] !! EMAIL CONFIG MISSING !!`);
-            console.log(`[DEV MODE] OTP for ${email} is: ${otpCode}\n\n`);
-            res.status(200).json({ message: 'Email config missing on server. Check server logs for OTP!' });
+            console.log(`\n\n[FALLBACK] OTP for ${email} is: ${otpCode}\n\n`);
+            res.status(200).json({ 
+                message: result.devMode ? 'Resend API key missing. Check server logs for OTP!' : 'Email service failed. Check server logs for the OTP!',
+                devMode: true 
+            });
         }
+
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
